@@ -5,6 +5,20 @@
 
 <mapper namespace="com.perfecthousehold.security.dao.UserDao">
 
+    <select id="findById" resultType="string">
+        SELECT row_to_json(t)
+        FROM (
+            SELECT u.id,
+                   u.username,
+                   u.email,
+                   u.password_hash AS "passwordHash",
+                   u.role,
+                   u.enabled
+            FROM users u
+            WHERE u.id = #{id}
+        ) t
+    </select>
+
     <select id="findByUsername" resultType="string">
         SELECT row_to_json(t)
         FROM (
@@ -45,5 +59,12 @@
             CURRENT_TIMESTAMP
         )
     </insert>
+
+    <update id="updatePassword">
+        UPDATE users
+        SET password_hash = #{passwordHash},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
 
 </mapper>

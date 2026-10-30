@@ -7,13 +7,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 public class UserService extends GenericService {
 
     private final UserDao userDao;
+
+    public User findById(Long id) {
+        String json = userDao.findById(id);
+        return mapDbObject(json, User.class);
+    }
 
     public User findByUsername(String username) {
         String json = userDao.findByUsername(username);
@@ -24,13 +27,8 @@ public class UserService extends GenericService {
         return mapDbObject(userDao.findByEmail(email), User.class);
     }
 
-    /**
-     * Registers a new user directly from JSON payload (String or Map)
-     * using mapDbObject from GenericService without intermediate DTOs.
-     */
     @Transactional
     public User registerUser(User user) {
-
         if (user.getRole() == null || user.getRole().isBlank()) {
             user.setRole("ROLE_USER");
         }
@@ -38,5 +36,10 @@ public class UserService extends GenericService {
 
         userDao.insert(user);
         return user;
+    }
+
+    @Transactional
+    public void updatePassword(Long id, String passwordHash) {
+        userDao.updatePassword(id, passwordHash);
     }
 }

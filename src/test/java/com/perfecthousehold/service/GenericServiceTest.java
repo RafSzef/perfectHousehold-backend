@@ -53,7 +53,6 @@ class GenericServiceTest {
 
     @Test
     void testFindByUsernameWithRowToJsonString() {
-        // Simulates PostgreSQL row_to_json(t) returned by MyBatis UserDao
         String dbRowToJson = """
                 {"id":1,"username":"jan_kowalski","email":"jan@example.com","passwordHash":"secret123","role":"ROLE_USER","enabled":true}
                 """;
@@ -69,6 +68,22 @@ class GenericServiceTest {
         assertEquals("secret123", user.getPasswordHash());
         assertEquals("ROLE_USER", user.getRole());
         assertTrue(user.isEnabled());
+    }
+
+    @Test
+    void testFindByIdWithRowToJsonString() {
+        String dbRowToJson = """
+                {"id":42,"username":"admin","email":"admin@example.com","passwordHash":"$2a$10$hash","role":"ROLE_ADMIN","enabled":true}
+                """;
+
+        when(userDao.findById(42L)).thenReturn(dbRowToJson);
+
+        User user = userService.findById(42L);
+
+        assertNotNull(user);
+        assertEquals(42L, user.getId());
+        assertEquals("admin", user.getUsername());
+        assertEquals("ROLE_ADMIN", user.getRole());
     }
 
     @Test

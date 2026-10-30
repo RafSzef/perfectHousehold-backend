@@ -23,7 +23,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Registers a new user directly using User entity mapped by Spring MVC from JSON.
+     * Registers a new user. Only admins can create users.
      */
     @Transactional
     public User register(User user) {
@@ -31,7 +31,6 @@ public class AuthService {
             throw new IllegalArgumentException("Username is already taken: " + user.getUsername());
         }
 
-        // Hash the password if raw password was provided
         if (user.getPasswordHash() != null && !user.getPasswordHash().startsWith("$2a$")) {
             user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
         }
@@ -49,5 +48,28 @@ public class AuthService {
 
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         return tokenProvider.generateToken(principal);
+    }
+
+    /**
+     * Changes current user's password, strictly querying and updating by authenticated user ID.
+     */
+    @Transactional
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("New password cannot be empty");
+        }
+
+        User user = userService.findById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found with id: " + userId);
+        }
+
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password does not match");
+        }
+
+        String encodedNewPassword = passwordEncoder.encode(newPassword);
+        userService.updatePassword(userId, encodedNewPassword);
+        log.info("Password successfully changed for userId: {}", userId);
     }
 }

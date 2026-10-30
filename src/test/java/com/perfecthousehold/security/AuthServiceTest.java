@@ -78,4 +78,35 @@ class AuthServiceTest {
 
         assertEquals("mocked.jwt.token", token);
     }
+
+    @Test
+    void testChangePasswordSuccess() {
+        User user = new User();
+        user.setId(5L);
+        user.setUsername("kasia");
+        user.setPasswordHash("$2a$10$oldHashedPassword");
+
+        when(userService.findById(5L)).thenReturn(user);
+        when(passwordEncoder.matches("stareHaslo", "$2a$10$oldHashedPassword")).thenReturn(true);
+        when(passwordEncoder.encode("noweHaslo123")).thenReturn("$2a$10$newHashedPassword");
+
+        assertDoesNotThrow(() -> authService.changePassword(5L, "stareHaslo", "noweHaslo123"));
+        verify(userService).updatePassword(5L, "$2a$10$newHashedPassword");
+    }
+
+    @Test
+    void testChangePasswordFailsWhenCurrentPasswordMismatch() {
+        User user = new User();
+        user.setId(5L);
+        user.setPasswordHash("$2a$10$oldHashedPassword");
+
+        when(userService.findById(5L)).thenReturn(user);
+        when(passwordEncoder.matches("zleHaslo", "$2a$10$oldHashedPassword")).thenReturn(false);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                authService.changePassword(5L, "zleHaslo", "noweHaslo123")
+        );
+        assertEquals("Current password does not match", ex.getMessage());
+        verify(userService, never()).updatePassword(anyLong(), anyString());
+    }
 }
