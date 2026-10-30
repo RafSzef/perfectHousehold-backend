@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: perfecthousehold-backend
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-perfecthousehold}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgrespassword}
+      - SECURITY_JWT_SECRET=${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      - SECURITY_JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-86400000}
+    # If your existing PostgreSQL container is in a custom Docker network:
+    # networks:
+    #   - postgres-network
+
+# If using an existing external network created for PostgreSQL:
+# networks:
+#   postgres-network:
+#     external: true
+#     name: ${POSTGRES_DOCKER_NETWORK:-postgres-network}
