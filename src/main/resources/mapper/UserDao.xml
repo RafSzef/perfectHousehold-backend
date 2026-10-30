@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.perfecthousehold.security.dao.UserDao">
+
+    <select id="findByUsername" resultType="string">
+        SELECT row_to_json(t)
+        FROM (
+            SELECT u.id,
+                   u.username,
+                   u.email,
+                   u.password_hash AS "passwordHash",
+                   u.role,
+                   u.enabled
+            FROM users u
+            WHERE u.username = #{username}
+        ) t
+    </select>
+
+    <select id="findByEmail" resultType="string">
+        SELECT row_to_json(t)
+        FROM (
+            SELECT u.id,
+                   u.username,
+                   u.email,
+                   u.password_hash AS "passwordHash",
+                   u.role,
+                   u.enabled
+            FROM users u
+            WHERE u.email = #{email}
+        ) t
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="user.id" keyColumn="id">
+        INSERT INTO users (username, email, password_hash, role, enabled, created_at, updated_at)
+        VALUES (
+            #{user.username},
+            #{user.email},
+            #{user.passwordHash},
+            COALESCE(#{user.role}, 'ROLE_USER'),
+            COALESCE(#{user.enabled}, true),
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+        )
+    </insert>
+
+</mapper>
