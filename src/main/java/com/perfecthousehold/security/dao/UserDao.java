@@ -9,6 +9,8 @@ public interface UserDao {
 
     String findById(@Param("id") Long id);
 
+    String findAll();
+
     String findByUsername(@Param("username") String username);
 
     String findByEmail(@Param("email") String email);

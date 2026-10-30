@@ -76,6 +76,9 @@ public abstract class GenericService {
             var listType = typeFactory.constructCollectionType(List.class, elementClass);
 
             if (source instanceof String str) {
+                if (str.isBlank() || "null".equals(str.trim())) {
+                    return Collections.emptyList();
+                }
                 return objectMapper.readValue(str, listType);
             } else {
                 return objectMapper.convertValue(source, listType);

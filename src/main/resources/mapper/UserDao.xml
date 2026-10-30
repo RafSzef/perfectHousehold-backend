@@ -19,6 +19,20 @@
         ) t
     </select>
 
+    <select id="findAll" resultType="string">
+        SELECT json_agg(t)
+        FROM (
+            SELECT u.id,
+                   u.username,
+                   u.email,
+                   u.password_hash AS "passwordHash",
+                   u.role,
+                   u.enabled
+            FROM users u
+            ORDER BY u.id ASC
+        ) t
+    </select>
+
     <select id="findByUsername" resultType="string">
         SELECT row_to_json(t)
         FROM (

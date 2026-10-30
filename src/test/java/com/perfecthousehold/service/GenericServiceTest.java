@@ -100,4 +100,44 @@ class GenericServiceTest {
         assertTrue(registered.isEnabled());
         verify(userDao).insert(eq(user));
     }
+
+    @Test
+    void testFindAllWithJsonAggString() {
+        String dbJsonAgg = """
+                [
+                    {"id":1,"username":"admin","email":"admin@example.com","role":"ROLE_ADMIN","enabled":true},
+                    {"id":2,"username":"jan","email":"jan@example.com","role":"ROLE_USER","enabled":true}
+                ]
+                """;
+
+        when(userDao.findAll()).thenReturn(dbJsonAgg);
+
+        var users = userService.findAll();
+
+        assertNotNull(users);
+        assertEquals(2, users.size());
+        assertEquals("admin", users.get(0).getUsername());
+        assertEquals("ROLE_ADMIN", users.get(0).getRole());
+        assertEquals("jan", users.get(1).getUsername());
+        assertEquals("ROLE_USER", users.get(1).getRole());
+    }
+
+    @Test
+    void testMapDbListWithNullOrEmptyJsonAgg() {
+        var nullResult = userService.mapDbList(null, User.class);
+        assertNotNull(nullResult);
+        assertTrue(nullResult.isEmpty());
+
+        var emptyStringResult = userService.mapDbList("   ", User.class);
+        assertNotNull(emptyStringResult);
+        assertTrue(emptyStringResult.isEmpty());
+
+        var literalNullStringResult = userService.mapDbList("null", User.class);
+        assertNotNull(literalNullStringResult);
+        assertTrue(literalNullStringResult.isEmpty());
+
+        var emptyArrayResult = userService.mapDbList("[]", User.class);
+        assertNotNull(emptyArrayResult);
+        assertTrue(emptyArrayResult.isEmpty());
+    }
 }
