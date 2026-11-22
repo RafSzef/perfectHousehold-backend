@@ -31,36 +31,24 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.ORACLESSHKEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/oracle_vm
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/oracle_vm
           chmod 600 ~/.ssh/oracle_vm
 
-      - name: Copy archive to Oracle VM
-        env:
-          ORACLE_HOST: ${{ secrets.ORACLEHOST }}
-          ORACLE_USER: ${{ secrets.ORACLEUSER }}
-          ORACLE_PORT: ${{ secrets.ORACLEPORT || '22' }}
-        run: |
-          scp -i ~/.ssh/oracle_vm -P "$ORACLE_PORT" -o StrictHostKeyChecking=accept-new \
-            /tmp/perfecthousehold-backend.tar.gz \
-            "${ORACLE_USER}@${ORACLE_HOST}:/tmp/perfecthousehold-backend.tar.gz"
-
-      - name: Unpack and build on Oracle VM
+      - name: Stream archive, unpack and build on Oracle VM
         env:
           ORACLE_HOST: ${{ secrets.ORACLEHOST }}
           ORACLE_USER: ${{ secrets.ORACLEUSER }}
           ORACLE_PORT: ${{ secrets.ORACLEPORT || '22' }}
           DEPLOY_PATH: ${{ secrets.ORACLEDEPLOYPATH }}
         run: |
+          ORACLE_HOST=$(printf '%s' "$ORACLE_HOST" | tr -d '[:space:]')
+          ORACLE_USER=$(printf '%s' "$ORACLE_USER" | tr -d '[:space:]')
+          ORACLE_PORT=$(printf '%s' "$ORACLE_PORT" | tr -d '[:space:]')
+          DEPLOY_PATH=$(printf '%s' "$DEPLOY_PATH" | tr -d '\r\n')
           ssh -i ~/.ssh/oracle_vm -p "$ORACLE_PORT" -o StrictHostKeyChecking=accept-new \
-            "${ORACLE_USER}@${ORACLE_HOST}" << EOF
-            set -e
-            mkdir -p "${DEPLOY_PATH}"
-            tar -xzf /tmp/perfecthousehold-backend.tar.gz -C "${DEPLOY_PATH}"
-            rm -f /tmp/perfecthousehold-backend.tar.gz
-            cd "${DEPLOY_PATH}"
-            docker compose up -d --build --remove-orphans
-            docker image prune -f
-          EOF
+            "${ORACLE_USER}@${ORACLE_HOST}" \
+            "set -e; mkdir -p '${DEPLOY_PATH}'; tar -xzf - -C '${DEPLOY_PATH}'; cd '${DEPLOY_PATH}'; docker compose up -d --build --remove-orphans; docker image prune -f" \
+            < /tmp/perfecthousehold-backend.tar.gz
 
       - name: Cleanup SSH key
         if: always()
