@@ -1,0 +1,67 @@
+name: Deploy Backend to Oracle VM
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Package source archive (.tar.gz)
+        run: |
+          tar -czf /tmp/perfecthousehold-backend.tar.gz \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.idea' \
+            --exclude='.env' \
+            --exclude='target' \
+            --exclude='*.http' \
+            .
+
+      - name: Configure SSH for Oracle VM
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ORACLESSHKEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/oracle_vm
+          chmod 600 ~/.ssh/oracle_vm
+
+      - name: Copy archive to Oracle VM
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLEHOST }}
+          ORACLE_USER: ${{ secrets.ORACLEUSER }}
+          ORACLE_PORT: ${{ secrets.ORACLEPORT || '22' }}
+        run: |
+          scp -i ~/.ssh/oracle_vm -P "$ORACLE_PORT" -o StrictHostKeyChecking=accept-new \
+            /tmp/perfecthousehold-backend.tar.gz \
+            "${ORACLE_USER}@${ORACLE_HOST}:/tmp/perfecthousehold-backend.tar.gz"
+
+      - name: Unpack and build on Oracle VM
+        env:
+          ORACLE_HOST: ${{ secrets.ORACLEHOST }}
+          ORACLE_USER: ${{ secrets.ORACLEUSER }}
+          ORACLE_PORT: ${{ secrets.ORACLEPORT || '22' }}
+          DEPLOY_PATH: ${{ secrets.ORACLEDEPLOYPATH }}
+        run: |
+          ssh -i ~/.ssh/oracle_vm -p "$ORACLE_PORT" -o StrictHostKeyChecking=accept-new \
+            "${ORACLE_USER}@${ORACLE_HOST}" << EOF
+            set -e
+            mkdir -p "${DEPLOY_PATH}"
+            tar -xzf /tmp/perfecthousehold-backend.tar.gz -C "${DEPLOY_PATH}"
+            rm -f /tmp/perfecthousehold-backend.tar.gz
+            cd "${DEPLOY_PATH}"
+            docker compose up -d --build --remove-orphans
+            docker image prune -f
+          EOF
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/oracle_vm /tmp/perfecthousehold-backend.tar.gz
