@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${APP_PORT:${SERVER_PORT:8080}}
 
 spring:
   application:
@@ -23,6 +23,20 @@ spring:
     sql-migration-separator: "__"
     baseline-on-migrate: true
     validate-migration-naming: true
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.perfecthousehold.security.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+
+security:
+  jwt:
+    # 256-bit hex secret key for HMAC-SHA256
+    secret: ${JWT_SECRET:${SECURITY_JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}}
+    expiration-ms: ${JWT_EXPIRATION_MS:${SECURITY_JWT_EXPIRATION_MS:86400000}} # 24h
 
 logging:
   level:
