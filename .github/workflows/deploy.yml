@@ -47,7 +47,7 @@ jobs:
           DEPLOY_PATH=$(printf '%s' "$DEPLOY_PATH" | tr -d '\r\n')
           ssh -i ~/.ssh/oracle_vm -p "$ORACLE_PORT" -o StrictHostKeyChecking=accept-new \
             "${ORACLE_USER}@${ORACLE_HOST}" \
-            "set -e; mkdir -p '${DEPLOY_PATH}'; tar -xzf - -C '${DEPLOY_PATH}'; cd '${DEPLOY_PATH}'; docker compose up -d --build --remove-orphans; docker image prune -f" \
+            "set -e; mkdir -p '${DEPLOY_PATH}'; rm -rf '${DEPLOY_PATH}/src'; tar -xzf - -C '${DEPLOY_PATH}'; cd '${DEPLOY_PATH}'; docker compose up -d --build --remove-orphans; docker image prune -f" \
             < /tmp/perfecthousehold-backend.tar.gz
 
       - name: Cleanup SSH key
