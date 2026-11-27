@@ -87,4 +87,22 @@ class DbObjectMapperTest {
         assertEquals("jan", users.get(1).getUsername());
         assertEquals("ROLE_USER", users.get(1).getRole());
     }
+
+    @Test
+    void testMapThrowsDbMappingExceptionOnMalformedJson() {
+        DbMappingException ex = assertThrows(DbMappingException.class,
+                () -> dbObjectMapper.map("{invalid-json", User.class));
+
+        assertEquals("Failed to map payload to User", ex.getMessage());
+        assertNotNull(ex.getCause());
+    }
+
+    @Test
+    void testMapListThrowsDbMappingExceptionOnMalformedJson() {
+        DbMappingException ex = assertThrows(DbMappingException.class,
+                () -> dbObjectMapper.mapList("[{invalid-json", User.class));
+
+        assertEquals("Failed to map payload to List<User>", ex.getMessage());
+        assertNotNull(ex.getCause());
+    }
 }

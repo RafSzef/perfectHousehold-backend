@@ -3,9 +3,9 @@ package com.perfecthousehold.generic.mapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +14,6 @@ import java.util.List;
  * Reusable mapper component providing direct DTO-free mapping from incoming JSON
  * (Strings, Maps, JsonNodes, byte arrays, InputStreams) directly to database entity models.
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DbObjectMapper {
@@ -52,9 +51,8 @@ public class DbObjectMapper {
             } else {
                 return objectMapper.convertValue(source, targetClass);
             }
-        } catch (Exception e) {
-            log.error("Failed to map JSON payload to entity {}: {}", targetClass.getSimpleName(), e.getMessage());
-            throw new RuntimeException("Failed to map JSON to " + targetClass.getSimpleName() + ": " + e.getMessage(), e);
+        } catch (IOException | IllegalArgumentException e) {
+            throw new DbMappingException("Failed to map payload to " + targetClass.getSimpleName(), e);
         }
     }
 
@@ -83,9 +81,8 @@ public class DbObjectMapper {
             } else {
                 return objectMapper.convertValue(source, listType);
             }
-        } catch (Exception e) {
-            log.error("Failed to map JSON to List<{}>: {}", elementClass.getSimpleName(), e.getMessage());
-            throw new RuntimeException("Failed to map JSON to List<" + elementClass.getSimpleName() + ">: " + e.getMessage(), e);
+        } catch (IOException | IllegalArgumentException e) {
+            throw new DbMappingException("Failed to map payload to List<" + elementClass.getSimpleName() + ">", e);
         }
     }
 }
