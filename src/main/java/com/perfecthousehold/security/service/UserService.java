@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,17 +22,17 @@ public class UserService {
         return dbObjectMapper.mapList(json, User.class);
     }
 
-    public User findById(Long id) {
+    public Optional<User> findById(Long id) {
         String json = userDao.findById(id);
         return dbObjectMapper.map(json, User.class);
     }
 
-    public User findByUsername(String username) {
+    public Optional<User> findByUsername(String username) {
         String json = userDao.findByUsername(username);
         return dbObjectMapper.map(json, User.class);
     }
 
-    public User findByEmail(String email) {
+    public Optional<User> findByEmail(String email) {
         return dbObjectMapper.map(userDao.findByEmail(email), User.class);
     }
 

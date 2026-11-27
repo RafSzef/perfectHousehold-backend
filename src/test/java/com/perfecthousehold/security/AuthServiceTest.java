@@ -15,6 +15,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -48,7 +50,7 @@ class AuthServiceTest {
         user.setEmail("nowy@example.com");
         user.setPasswordHash("surowe_haslo");
 
-        when(userService.findByUsername("nowy_user")).thenReturn(null);
+        when(userService.findByUsername("nowy_user")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("surowe_haslo")).thenReturn("$2a$10$hashedPassword");
         when(userService.registerUser(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -86,7 +88,7 @@ class AuthServiceTest {
         user.setUsername("kasia");
         user.setPasswordHash("$2a$10$oldHashedPassword");
 
-        when(userService.findById(5L)).thenReturn(user);
+        when(userService.findById(5L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("stareHaslo", "$2a$10$oldHashedPassword")).thenReturn(true);
         when(passwordEncoder.encode("noweHaslo123")).thenReturn("$2a$10$newHashedPassword");
 
@@ -100,7 +102,7 @@ class AuthServiceTest {
         user.setId(5L);
         user.setPasswordHash("$2a$10$oldHashedPassword");
 
-        when(userService.findById(5L)).thenReturn(user);
+        when(userService.findById(5L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("zleHaslo", "$2a$10$oldHashedPassword")).thenReturn(false);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->

@@ -5,7 +5,7 @@ import com.perfecthousehold.security.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,7 +19,7 @@ class DbObjectMapperTest {
     }
 
     @Test
-    void testMapFromJsonStringWithoutDto() {
+    void testMapFromRowToJsonString() {
         String jsonPayload = """
                 {
                     "username": "jan_kowalski",
@@ -29,25 +29,19 @@ class DbObjectMapperTest {
                 }
                 """;
 
-        User user = dbObjectMapper.map(jsonPayload, User.class);
+        Optional<User> result = dbObjectMapper.map(jsonPayload, User.class);
 
-        assertNotNull(user);
-        assertEquals("jan_kowalski", user.getUsername());
-        assertEquals("jan@example.com", user.getEmail());
-        assertEquals("secret123", user.getPasswordHash());
+        assertTrue(result.isPresent());
+        assertEquals("jan_kowalski", result.get().getUsername());
+        assertEquals("jan@example.com", result.get().getEmail());
+        assertEquals("secret123", result.get().getPasswordHash());
     }
 
     @Test
-    void testMapFromNullAndMap() {
-        assertNull(dbObjectMapper.map(null, User.class));
-
-        User fromMap = dbObjectMapper.map(
-                Map.of("username", "anna", "email", "anna@example.com"),
-                User.class
-        );
-        assertNotNull(fromMap);
-        assertEquals("anna", fromMap.getUsername());
-        assertEquals("anna@example.com", fromMap.getEmail());
+    void testMapReturnsEmptyOptionalForNullOrBlankJson() {
+        assertTrue(dbObjectMapper.map(null, User.class).isEmpty());
+        assertTrue(dbObjectMapper.map("   ", User.class).isEmpty());
+        assertTrue(dbObjectMapper.map("null", User.class).isEmpty());
     }
 
     @Test
@@ -93,7 +87,7 @@ class DbObjectMapperTest {
         DbMappingException ex = assertThrows(DbMappingException.class,
                 () -> dbObjectMapper.map("{invalid-json", User.class));
 
-        assertEquals("Failed to map payload to User", ex.getMessage());
+        assertEquals("Failed to map DB JSON to User", ex.getMessage());
         assertNotNull(ex.getCause());
     }
 
@@ -102,7 +96,7 @@ class DbObjectMapperTest {
         DbMappingException ex = assertThrows(DbMappingException.class,
                 () -> dbObjectMapper.mapList("[{invalid-json", User.class));
 
-        assertEquals("Failed to map payload to List<User>", ex.getMessage());
+        assertEquals("Failed to map DB JSON to List<User>", ex.getMessage());
         assertNotNull(ex.getCause());
     }
 }

@@ -27,7 +27,7 @@ public class AuthService {
      */
     @Transactional
     public User register(User user) {
-        if (userService.findByUsername(user.getUsername()) != null) {
+        if (userService.findByUsername(user.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Username is already taken: " + user.getUsername());
         }
 
@@ -59,10 +59,8 @@ public class AuthService {
             throw new IllegalArgumentException("New password cannot be empty");
         }
 
-        User user = userService.findById(userId);
-        if (user == null) {
-            throw new IllegalArgumentException("User not found with id: " + userId);
-        }
+        User user = userService.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
 
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Current password does not match");

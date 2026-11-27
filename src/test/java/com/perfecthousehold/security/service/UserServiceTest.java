@@ -10,6 +10,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -37,9 +39,10 @@ class UserServiceTest {
 
         when(userDao.findByUsername("jan_kowalski")).thenReturn(dbRowToJson);
 
-        User user = userService.findByUsername("jan_kowalski");
+        Optional<User> result = userService.findByUsername("jan_kowalski");
 
-        assertNotNull(user);
+        assertTrue(result.isPresent());
+        User user = result.get();
         assertEquals(1L, user.getId());
         assertEquals("jan_kowalski", user.getUsername());
         assertEquals("jan@example.com", user.getEmail());
@@ -56,12 +59,19 @@ class UserServiceTest {
 
         when(userDao.findById(42L)).thenReturn(dbRowToJson);
 
-        User user = userService.findById(42L);
+        Optional<User> result = userService.findById(42L);
 
-        assertNotNull(user);
-        assertEquals(42L, user.getId());
-        assertEquals("admin", user.getUsername());
-        assertEquals("ROLE_ADMIN", user.getRole());
+        assertTrue(result.isPresent());
+        assertEquals(42L, result.get().getId());
+        assertEquals("admin", result.get().getUsername());
+        assertEquals("ROLE_ADMIN", result.get().getRole());
+    }
+
+    @Test
+    void testFindByIdReturnsEmptyOptionalWhenNotFound() {
+        when(userDao.findById(999L)).thenReturn(null);
+
+        assertTrue(userService.findById(999L).isEmpty());
     }
 
     @Test

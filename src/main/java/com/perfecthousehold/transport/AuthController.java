@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -62,7 +63,8 @@ public class AuthController {
     @PublicView
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
-        User user = userService.findByUsername(principal.getUsername());
+        User user = userService.findByUsername(principal.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + principal.getUsername()));
         return ResponseEntity.ok(user);
     }
 }

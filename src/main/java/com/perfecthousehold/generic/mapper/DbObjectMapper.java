@@ -1,18 +1,16 @@
 package com.perfecthousehold.generic.mapper;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * Reusable mapper component providing direct DTO-free mapping from incoming JSON
- * (Strings, Maps, JsonNodes, byte arrays, InputStreams) directly to database entity models.
+ * Mapper component dedicated exclusively to deserializing PostgreSQL JSON query results
+ * ({@code row_to_json} and {@code json_agg}) directly into database entity models.
  */
 @Component
 @RequiredArgsConstructor
@@ -21,68 +19,48 @@ public class DbObjectMapper {
     private final ObjectMapper objectMapper;
 
     /**
-     * Maps arbitrary incoming JSON (String, JsonNode, Map, byte[], InputStream) directly to
-     * the target DB entity object without creating intermediate DTO classes.
+     * Maps a PostgreSQL {@code row_to_json} string directly to an {@link Optional} target entity.
      *
-     * @param source      JSON payload (String, Map, JsonNode, byte[], InputStream)
-     * @param targetClass Target DB entity class (e.g. User.class)
+     * @param json        JSON string from {@code row_to_json}, may be {@code null} or blank
+     * @param targetClass Target DB entity class (e.g. {@code User.class})
      * @param <T>         Target entity type
-     * @return Populated target entity instance, or {@code null} if {@code source} is {@code null}
+     * @return {@link Optional} containing the mapped entity, or {@link Optional#empty()} when no row was returned
      */
-    @SuppressWarnings("unchecked")
-    public <T> T map(Object source, Class<T> targetClass) {
-        if (source == null) {
-            return null;
-        }
-
-        if (targetClass.isInstance(source)) {
-            return (T) source;
+    public <T> Optional<T> map(String json, Class<T> targetClass) {
+        if (isNullOrBlankJson(json)) {
+            return Optional.empty();
         }
 
         try {
-            if (source instanceof String str) {
-                return objectMapper.readValue(str, targetClass);
-            } else if (source instanceof byte[] bytes) {
-                return objectMapper.readValue(bytes, targetClass);
-            } else if (source instanceof InputStream is) {
-                return objectMapper.readValue(is, targetClass);
-            } else if (source instanceof JsonNode node) {
-                return objectMapper.treeToValue(node, targetClass);
-            } else {
-                return objectMapper.convertValue(source, targetClass);
-            }
-        } catch (IOException | IllegalArgumentException e) {
-            throw new DbMappingException("Failed to map payload to " + targetClass.getSimpleName(), e);
+            return Optional.ofNullable(objectMapper.readValue(json, targetClass));
+        } catch (IOException e) {
+            throw new DbMappingException("Failed to map DB JSON to " + targetClass.getSimpleName(), e);
         }
     }
 
     /**
-     * Maps a JSON array or collection directly into a List of DB entity objects without DTOs.
+     * Maps a PostgreSQL {@code json_agg} string directly into a {@link List} of target entities.
      *
-     * @param source       JSON array String or collection
+     * @param json         JSON array string from {@code json_agg}, may be {@code null} or blank
      * @param elementClass Target entity class
      * @param <T>          Element type
-     * @return List of DB entity objects
+     * @return List of mapped entities, or an empty list when no rows were returned
      */
-    public <T> List<T> mapList(Object source, Class<T> elementClass) {
-        if (source == null) {
-            return Collections.emptyList();
+    public <T> List<T> mapList(String json, Class<T> elementClass) {
+        if (isNullOrBlankJson(json)) {
+            return List.of();
         }
 
         try {
-            var typeFactory = objectMapper.getTypeFactory();
-            var listType = typeFactory.constructCollectionType(List.class, elementClass);
-
-            if (source instanceof String str) {
-                if (str.isBlank() || "null".equals(str.trim())) {
-                    return Collections.emptyList();
-                }
-                return objectMapper.readValue(str, listType);
-            } else {
-                return objectMapper.convertValue(source, listType);
-            }
-        } catch (IOException | IllegalArgumentException e) {
-            throw new DbMappingException("Failed to map payload to List<" + elementClass.getSimpleName() + ">", e);
+            var listType = objectMapper.getTypeFactory().constructCollectionType(List.class, elementClass);
+            List<T> result = objectMapper.readValue(json, listType);
+            return result != null ? result : List.of();
+        } catch (IOException e) {
+            throw new DbMappingException("Failed to map DB JSON to List<" + elementClass.getSimpleName() + ">", e);
         }
+    }
+
+    private boolean isNullOrBlankJson(String json) {
+        return json == null || json.isBlank() || "null".equals(json.trim());
     }
 }
