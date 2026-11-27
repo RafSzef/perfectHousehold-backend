@@ -5,6 +5,10 @@ spring:
   application:
     name: perfecthousehold-backend
 
+  mvc:
+    problemdetails:
+      enabled: true
+
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:perfecthousehold}
     username: ${DB_USER:postgres}
