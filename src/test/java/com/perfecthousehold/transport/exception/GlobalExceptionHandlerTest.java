@@ -3,6 +3,7 @@ package com.perfecthousehold.transport.exception;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.perfecthousehold.config.JacksonConfig;
+import com.perfecthousehold.generic.exception.ConflictException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -98,6 +99,19 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void testConflictExceptionReturns409ProblemDetail() throws Exception {
+        mockMvc.perform(get("/test-errors/domain-conflict"))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.title").value("Conflict"))
+                .andExpect(jsonPath("$.detail").value("Username is already taken: jan"))
+                .andExpect(jsonPath("$.type").value("https://perfecthousehold.local/errors/conflict"))
+                .andExpect(jsonPath("$.instance").value("/test-errors/domain-conflict"))
+                .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
     void testDataIntegrityViolationReturns409WithoutSqlLeak() throws Exception {
         mockMvc.perform(get("/test-errors/conflict"))
                 .andExpect(status().isConflict())
@@ -153,6 +167,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/bad-request")
         void badRequest() {
             throw new IllegalArgumentException("Current password does not match");
+        }
+
+        @GetMapping("/domain-conflict")
+        void domainConflict() {
+            throw new ConflictException("Username is already taken: jan");
         }
 
         @GetMapping("/conflict")

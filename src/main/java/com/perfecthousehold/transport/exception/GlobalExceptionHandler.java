@@ -1,5 +1,6 @@
 package com.perfecthousehold.transport.exception;
 
+import com.perfecthousehold.generic.exception.ConflictException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -135,6 +136,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "Bad Request",
                 ex.getMessage(),
                 "bad-request",
+                request.getRequestURI()
+        );
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ProblemDetail handleConflict(ConflictException ex, HttpServletRequest request) {
+        log.warn("Conflict on {}: {}", request.getRequestURI(), ex.getMessage());
+        return createProblemDetail(
+                HttpStatus.CONFLICT,
+                "Conflict",
+                ex.getMessage(),
+                "conflict",
                 request.getRequestURI()
         );
     }

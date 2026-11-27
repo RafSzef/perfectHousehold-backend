@@ -1,5 +1,6 @@
 package com.perfecthousehold.security.service;
 
+import com.perfecthousehold.generic.exception.ConflictException;
 import com.perfecthousehold.security.auth.UserPrincipal;
 import com.perfecthousehold.security.entity.User;
 import com.perfecthousehold.security.jwt.JwtTokenProvider;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,12 +30,13 @@ public class AuthService {
     @Transactional
     public User register(User user) {
         if (userService.findByUsername(user.getUsername()).isPresent()) {
-            throw new IllegalArgumentException("Username is already taken: " + user.getUsername());
+            throw new ConflictException("Username is already taken: " + user.getUsername());
+        }
+        if (userService.findByEmail(user.getEmail()).isPresent()) {
+            throw new ConflictException("Email is already taken: " + user.getEmail());
         }
 
-        if (user.getPasswordHash() != null && !user.getPasswordHash().startsWith("$2a$")) {
-            user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
-        }
+        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
 
         return userService.registerUser(user);
     }
@@ -46,7 +49,9 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(username, password)
         );
 
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        if (!(authentication.getPrincipal() instanceof UserPrincipal principal)) {
+            throw new IllegalStateException("Unexpected authentication principal type");
+        }
         return tokenProvider.generateToken(principal);
     }
 
@@ -55,12 +60,8 @@ public class AuthService {
      */
     @Transactional
     public void changePassword(Long userId, String currentPassword, String newPassword) {
-        if (newPassword == null || newPassword.isBlank()) {
-            throw new IllegalArgumentException("New password cannot be empty");
-        }
-
         User user = userService.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
 
         if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
             throw new IllegalArgumentException("Current password does not match");
