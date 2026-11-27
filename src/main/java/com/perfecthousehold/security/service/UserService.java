@@ -1,6 +1,6 @@
 package com.perfecthousehold.security.service;
 
-import com.perfecthousehold.generic.service.GenericService;
+import com.perfecthousehold.generic.mapper.DbObjectMapper;
 import com.perfecthousehold.security.dao.UserDao;
 import com.perfecthousehold.security.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -11,27 +11,28 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class UserService extends GenericService {
+public class UserService {
 
     private final UserDao userDao;
+    private final DbObjectMapper dbObjectMapper;
 
     public List<User> findAll() {
         String json = userDao.findAll();
-        return mapDbList(json, User.class);
+        return dbObjectMapper.mapList(json, User.class);
     }
 
     public User findById(Long id) {
         String json = userDao.findById(id);
-        return mapDbObject(json, User.class);
+        return dbObjectMapper.map(json, User.class);
     }
 
     public User findByUsername(String username) {
         String json = userDao.findByUsername(username);
-        return mapDbObject(json, User.class);
+        return dbObjectMapper.map(json, User.class);
     }
 
     public User findByEmail(String email) {
-        return mapDbObject(userDao.findByEmail(email), User.class);
+        return dbObjectMapper.map(userDao.findByEmail(email), User.class);
     }
 
     @Transactional

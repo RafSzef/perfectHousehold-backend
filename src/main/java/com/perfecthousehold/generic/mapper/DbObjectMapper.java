@@ -1,37 +1,37 @@
-package com.perfecthousehold.generic.service;
+package com.perfecthousehold.generic.mapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Base generic service providing direct DTO-free mapping from incoming JSON
- * (Strings, Maps, JsonNodes) directly to database entity models.
+ * Reusable mapper component providing direct DTO-free mapping from incoming JSON
+ * (Strings, Maps, JsonNodes, byte arrays, InputStreams) directly to database entity models.
  */
-public abstract class GenericService {
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class DbObjectMapper {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    @Autowired
-    protected ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     /**
-     * Maps arbitrary incoming JSON (String, JsonNode, Map, byte[]) directly to
+     * Maps arbitrary incoming JSON (String, JsonNode, Map, byte[], InputStream) directly to
      * the target DB entity object without creating intermediate DTO classes.
      *
-     * @param source      JSON payload (String, Map, JsonNode)
+     * @param source      JSON payload (String, Map, JsonNode, byte[], InputStream)
      * @param targetClass Target DB entity class (e.g. User.class)
      * @param <T>         Target entity type
-     * @return Populated target entity instance
+     * @return Populated target entity instance, or {@code null} if {@code source} is {@code null}
      */
     @SuppressWarnings("unchecked")
-    public <T> T mapDbObject(Object source, Class<T> targetClass) {
+    public <T> T map(Object source, Class<T> targetClass) {
         if (source == null) {
             return null;
         }
@@ -66,7 +66,7 @@ public abstract class GenericService {
      * @param <T>          Element type
      * @return List of DB entity objects
      */
-    public <T> List<T> mapDbList(Object source, Class<T> elementClass) {
+    public <T> List<T> mapList(Object source, Class<T> elementClass) {
         if (source == null) {
             return Collections.emptyList();
         }

@@ -1,16 +1,14 @@
-package com.perfecthousehold.service;
+package com.perfecthousehold.security.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.perfecthousehold.config.JacksonConfig;
+import com.perfecthousehold.generic.mapper.DbObjectMapper;
 import com.perfecthousehold.security.dao.UserDao;
 import com.perfecthousehold.security.entity.User;
-import com.perfecthousehold.security.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
@@ -18,7 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class GenericServiceTest {
+class UserServiceTest {
 
     @Mock
     private UserDao userDao;
@@ -27,28 +25,8 @@ class GenericServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userDao);
-        ObjectMapper objectMapper = new JacksonConfig().objectMapper();
-        ReflectionTestUtils.setField(userService, "objectMapper", objectMapper);
-    }
-
-    @Test
-    void testMapDbObjectFromJsonStringWithoutDto() {
-        String jsonPayload = """
-                {
-                    "username": "jan_kowalski",
-                    "email": "jan@example.com",
-                    "passwordHash": "secret123",
-                    "extraIgnoredField": "extraValue"
-                }
-                """;
-
-        User user = userService.mapDbObject(jsonPayload, User.class);
-
-        assertNotNull(user);
-        assertEquals("jan_kowalski", user.getUsername());
-        assertEquals("jan@example.com", user.getEmail());
-        assertEquals("secret123", user.getPasswordHash());
+        DbObjectMapper dbObjectMapper = new DbObjectMapper(new JacksonConfig().objectMapper());
+        userService = new UserService(userDao, dbObjectMapper);
     }
 
     @Test
@@ -87,21 +65,6 @@ class GenericServiceTest {
     }
 
     @Test
-    void testRegisterUserWithParamAnnotation() {
-        User user = new User();
-        user.setUsername("nowy_user");
-        user.setEmail("nowy@example.com");
-        user.setPasswordHash("tajne123");
-
-        User registered = userService.registerUser(user);
-
-        assertNotNull(registered);
-        assertEquals("ROLE_USER", registered.getRole());
-        assertTrue(registered.isEnabled());
-        verify(userDao).insert(eq(user));
-    }
-
-    @Test
     void testFindAllWithJsonAggString() {
         String dbJsonAgg = """
                 [
@@ -123,21 +86,17 @@ class GenericServiceTest {
     }
 
     @Test
-    void testMapDbListWithNullOrEmptyJsonAgg() {
-        var nullResult = userService.mapDbList(null, User.class);
-        assertNotNull(nullResult);
-        assertTrue(nullResult.isEmpty());
+    void testRegisterUserWithDefaultRole() {
+        User user = new User();
+        user.setUsername("nowy_user");
+        user.setEmail("nowy@example.com");
+        user.setPasswordHash("tajne123");
 
-        var emptyStringResult = userService.mapDbList("   ", User.class);
-        assertNotNull(emptyStringResult);
-        assertTrue(emptyStringResult.isEmpty());
+        User registered = userService.registerUser(user);
 
-        var literalNullStringResult = userService.mapDbList("null", User.class);
-        assertNotNull(literalNullStringResult);
-        assertTrue(literalNullStringResult.isEmpty());
-
-        var emptyArrayResult = userService.mapDbList("[]", User.class);
-        assertNotNull(emptyArrayResult);
-        assertTrue(emptyArrayResult.isEmpty());
+        assertNotNull(registered);
+        assertEquals("ROLE_USER", registered.getRole());
+        assertTrue(registered.isEnabled());
+        verify(userDao).insert(eq(user));
     }
 }
